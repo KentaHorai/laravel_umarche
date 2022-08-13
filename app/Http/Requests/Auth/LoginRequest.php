@@ -45,7 +45,16 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->filled('remember'))) {
+        //リクエストクラスなのでrouteIsメソッドが使える
+        //config\auth.phpと一致させる必要がある
+        if($this->routeIs('owner.*')){//オーナーのログインフォームから来ていたら
+            $guard = 'owners';
+        }elseif($this->routeIs('admin.*')){
+            $guard = 'admin';
+        }else{
+            $guard = 'users';
+        }
+        if (! Auth::guard($guard)->attempt($this->only('email', 'password'), $this->filled('remember'))) {//guard($guard)を追加
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
